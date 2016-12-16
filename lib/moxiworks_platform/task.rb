@@ -181,7 +181,7 @@ module  MoxiworksPlatform
             opts[opt].nil? or opts[opt].to_s.empty?
       end
       results = []
-      json = { 'page_number': 1, 'total_pages': 0, 'tasks':[]}
+      json = { 'page_number'=> 1, 'total_pages'=> 0, 'tasks'=>[]}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
@@ -238,8 +238,8 @@ module  MoxiworksPlatform
        url = "#{MoxiworksPlatform::Config.url}/api/tasks/#{opts[:partner_task_id]}"
        self.send_request(:put, opts, url)
     end
-    
-    
+
+
     # Send our remote request to the Moxi Works Platform
     #
     # @param [Hash] opts named parameter Hash
@@ -291,13 +291,13 @@ module  MoxiworksPlatform
     def created_at=(w)
       raise  ::MoxiworksPlatform::Exception::ArgumentError, 'created_at is a read-only attribute'
     end
-      
+
     private
- 
+
      def int_attrs
        [:due_at, :duration, :completed_at, :created_at]
      end
-    
+
 
   end
 end

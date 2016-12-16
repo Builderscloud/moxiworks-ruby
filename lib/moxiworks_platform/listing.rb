@@ -337,7 +337,7 @@ module MoxiworksPlatform
             opts[opt].nil? or opts[opt].to_s.empty?
       end
       results = []
-      json = {'listings': [], 'last_page': true}
+      json = {'listings'=> [], 'last_page'=> true}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
