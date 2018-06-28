@@ -6,7 +6,7 @@ module MoxiworksPlatform
     #   moxi_works_agent_id is the Moxi Works Platform ID of the agent which a contact is
     #   or is to be associated with.
     #
-    #   this must be set for any Moxi Works Platform transaction
+    #   this or agent_uuid must be set for any Moxi Works Platform transaction
     #
     #   @return [String] the Moxi Works Platform ID of the agent
     attr_accessor :moxi_works_agent_id
@@ -18,6 +18,27 @@ module MoxiworksPlatform
     #
     #   @return [String] your system's unique ID for the contact
     attr_accessor :partner_contact_id
+
+    # @!attribute agent_uuid
+    #   The UUID of the agent the that the contact is to be associated with.
+    #
+    #   this or moxi_works_agent_id must be set for any Moxi Works Platform transaction
+    #
+    #   @return [String] the UUID of the agent
+    attr_accessor :agent_uuid
+
+
+    # @!attribute anniversary
+    #   the Contact's anniversary displayed as a Unix Timestamp. This will be empty if the data is unavailable
+    #
+    # @return [Integer or nil] -- Unix Timestamp
+    attr_accessor :anniversary
+
+    # @!attribute birthday
+    #   the Contact's birthday displayed as a Unix Timestamp. This will be empty if the data is unavailable
+    #
+    # @return [Integer or nil] -- Unix Timestamp
+    attr_accessor :birthday
 
     # @!attribute contact_name
     #   the full name of this Contact
@@ -45,6 +66,12 @@ module MoxiworksPlatform
     #
     #   @return [String] -- Default ''
     attr_accessor :home_city
+
+    # @!attribute home_purchase_anniversary
+    #   the anniversary of the purchase of contact's home displayed as a Unix Timestamp. This will be empty if the data is unavailable
+    #
+    # @return [Integer or nil] -- Unix Timestamp
+    attr_accessor :home_purchase_anniversary
 
     # @!attribute home_state
     #   the state in which the residence of this Contact is located
@@ -74,6 +101,12 @@ module MoxiworksPlatform
     #   @return [String] -- Default ''
     attr_accessor :home_country
 
+    # @!attribute is_new_contact
+    # whether the Contact is considered new
+    #
+    # @return [Boolean]
+    attr_accessor :is_new_contact
+
     # @!attribute job_title
     #   the specific job title this contact has; ex: 'Senior VP of Operations'
     #
@@ -91,6 +124,41 @@ module MoxiworksPlatform
     #
     #   @return [String] -- Default ''
     attr_accessor :occupation
+
+    # @!attribute is_new_contact
+    #   Whether the contact was recently added to the Agent's database.
+    #
+    #   @return [Boolean]
+    attr_accessor :is_new_contact
+
+    # @!attribute birthday
+    #   Birthday of the contact represented as a Unix Timestamp.
+    #
+    #   @return [Integer]
+    attr_accessor :birthday
+
+    # @!attribute anniversary
+    #   Anniversary of the contact represented as a Unix Timestamp.
+    #
+    #   @return [Integer]
+    attr_accessor :anniversary
+
+    # @!attribute home_purchase_anniversary
+    #   Anniversary of the contact's home purchase represented as a Unix Timestamp.
+    #
+    #   @return [Integer]
+    attr_accessor :home_purchase_anniversary
+
+    # @!attribute social_media_profiles
+    #   URLs to any social media profiles that the agent has defined.
+    #
+    # The structure of each social media profile entry will be a Hash with the following
+    #  format
+    #
+    #  { 'key': 'KEY_VAL_AS_STRING', 'url': 'URL_OF_SOCIAL_MEDIA_PROFILE' }
+    #
+    #   @return [Array]
+    attr_accessor :social_media_profiles
 
     # @!attribute partner_agent_id
     #   your system's unique identifier for the agent that this contact will be associated with
@@ -454,6 +522,7 @@ module MoxiworksPlatform
     # @option opts [String] :contact_name  full name of the contact
     # @option opts [String] :email_address full email address of the contact
     # @option opts [String] :phone_number  full phone number of the contact
+    # @option opts [Integer] :updated_since return all Contacts updated after this Unix timestamp
     #
     # @return [Array] containing MoxiworkPlatform::Contact objects
     #
@@ -473,15 +542,18 @@ module MoxiworksPlatform
         raise ::MoxiworksPlatform::Exception::ArgumentError, "#{opt} required" if
             opts[opt].nil? or opts[opt].to_s.empty?
       end
-      results = []
+      results = MoxiResponseArray.new()
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
         puts response if MoxiworksPlatform::Config.debug
+        results.headers = response.headers
         self.check_for_error_in_response(response)
         json = JSON.parse(response)
-        json.each do |r|
-          results << MoxiworksPlatform::Contact.new(r) unless r.nil? or r.empty?
+        if json and json['contacts']
+          json['contacts'].each do |r|
+            results << MoxiworksPlatform::Contact.new(r) unless r.nil? or r.empty?
+          end
         end
       end
       results
@@ -611,7 +683,8 @@ module MoxiworksPlatform
     #
     # @param [String] method The HTTP method to be used when connecting; ex: :put, :post, :get
     # @param [Hash] opts
-    # @option opts [String]  :moxi_works_agent_id *REQUIRED* The Moxi Works Agent ID for the agent to which this contact is to be associated
+    # @option opts [String]  :moxi_works_agent_id *-- either moxi_works_agent_id or agent_uuid is REQUIRED*  The Moxi Works Agent ID for the agent to which this contact is to be associated
+    # @option opts [String]  :agent_uuid *-- either moxi_works_agent_id or agent_uuid is REQUIRED* The Agent UUID for the agent to which this contact is to be associated
     # @option opts [String]  :partner_contact_id *REQUIRED* Your system's unique ID for this contact.
     #
     #     optional Contact parameters
@@ -673,11 +746,17 @@ module MoxiworksPlatform
       raise ::MoxiworksPlatform::Exception::ArgumentError,
             'arguments must be passed as named parameters' unless opts.is_a? Hash
       url ||= "#{MoxiworksPlatform::Config.url}/api/contacts"
-      required_opts = [:moxi_works_agent_id, :partner_contact_id]
+      required_opts = [:partner_contact_id]
       required_opts.each do |opt|
         raise ::MoxiworksPlatform::Exception::ArgumentError, "#{opt} required" if
             opts[opt].nil? or opts[opt].to_s.empty?
       end
+
+      raise ::MoxiworksPlatform::Exception::ArgumentError, "#{:moxi_works_agent_id} required" if
+            (opts[:moxi_works_agent_id].nil? or opts[:moxi_works_agent_id].to_s.empty?) and
+            (opts[:agent_uuid].nil? or opts[:agent_uuid].to_s.empty?)
+
+
       opts[:contact_id] = opts[:partner_contact_id]
       super(method, opts, url)
     end
@@ -717,9 +796,9 @@ module MoxiworksPlatform
 
     def int_attrs
       [:property_beds, :property_list_price, :search_min_year_built,
-                         :search_min_sq_ft, :search_min_price, :search_min_beds,
-                         :search_max_year_built, :search_max_sq_ft, :search_max_price,
-                         :search_min_lot_size, :search_max_lot_size]
+       :search_min_sq_ft, :search_min_price, :search_min_beds,
+       :search_max_year_built, :search_max_sq_ft, :search_max_price,
+       :search_min_lot_size, :search_max_lot_size]
     end
 
   end

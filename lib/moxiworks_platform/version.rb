@@ -1,3 +1,3 @@
 module MoxiworksPlatform
-  VERSION = '0.9.0'
+  VERSION = '0.13.7'
 end

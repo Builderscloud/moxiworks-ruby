@@ -16,6 +16,21 @@ module MoxiworksPlatform
     # @return [String] the UUID of the office which the Agent is associated
     attr_accessor :moxi_works_office_id
 
+     # @!attribute string the id of the agent used by the company of the agent
+    #
+    # @return [String] the UUID of the office which the Agent is associated
+    attr_accessor :client_agent_id
+
+     # @!attribute string the id office used by the company of the agent
+    #
+    # @return [String] the internal of the office which the Agent is associated used by the company
+    attr_accessor :client_office_id
+
+     # @!attribute string the id of the company used by the company of the agent
+    #
+    # @return [String] the UUID of the office which the Agent is associated
+    attr_accessor :client_company_id
+
     # @!attribute address_street
     #
     # @return [String] the agent's address, street and number
@@ -60,6 +75,16 @@ module MoxiworksPlatform
     #
     # @return [String] the agent's office address, zip code
     attr_accessor :office_address_zip
+
+    # @!attribute first_name
+    #
+    # @return [String] the agent's first name
+    attr_accessor :first_name
+
+    # @!attribute last_name
+    #
+    # @return [String] the agent's last name
+    attr_accessor :last_name
 
     # @!attribute name
     #
@@ -131,9 +156,23 @@ module MoxiworksPlatform
     # @return [String] any business related titles associated with the agent
     attr_accessor :title
 
+    # @!attribute uuid
+    #
+    # @return [String] UUID of the agent. Can be used as a unique
+    # identifier in determining associations between Agent objects and Listing
+    # objects.
+    attr_accessor :uuid
+
+    # @!attribute has_engage_access
+    #
+    # @return [String] whether the agent has access to MoxiWorks Engage
+    attr_accessor :has_engage_access
+
+
     # Find an Agent on the  Moxi Works Platform
     # @param [Hash] opts named parameter Hash
-    # @option opts [String]  :moxi_works_agent_id *REQUIRED* The Moxi Works Agent ID for the agent to which this contact is to be associated
+    # @option opts [String]  :moxi_works_agent_id  *REQUIRED* -- either :moxi_works_agent_id or :agent_uuid is required -- The Moxi Works Agent ID for the agent
+    # @option opts [String]  :agent_uuid *REQUIRED* -- either :moxi_works_agent_id or :agent_uuid is required -- The Moxi Works Agent ID for the agent
     #
     # @return [MoxiworksPlatform::Agent]
     #
@@ -141,13 +180,17 @@ module MoxiworksPlatform
     #     named parameters aren't included
     #
     def self.find(opts={})
-      url = "#{MoxiworksPlatform::Config.url}/api/agents/#{opts[:moxi_works_agent_id]}"
+      agent_identifier = opts[:agent_uuid] unless(opts[:agent_uuid].nil? or opts[:agent_uuid].empty?)
+       agent_identifier ||= opts[:moxi_works_agent_id] unless(opts[:moxi_works_agent_id].nil? or opts[:moxi_works_agent_id].empty?)
+      raise ::MoxiworksPlatform::Exception::ArgumentError, "#agent_uuid or moxi_works_agent_id required" if
+          agent_identifier.nil?
+      url = "#{MoxiworksPlatform::Config.url}/api/agents/#{agent_identifier}"
       self.send_request(:get, opts, url)
     end
 
     def self.send_request(method, opts={}, url=nil)
       url ||= "#{MoxiworksPlatform::Config.url}/api/agents"
-      required_opts = [:moxi_works_agent_id]
+      required_opts = [:moxi_works_company_id]
       raise ::MoxiworksPlatform::Exception::ArgumentError,
             'arguments must be passed as named parameters' unless opts.is_a? Hash
       required_opts.each do |opt|
@@ -192,12 +235,13 @@ module MoxiworksPlatform
         raise ::MoxiworksPlatform::Exception::ArgumentError, "#{opt} required" if
             opts[opt].nil? or opts[opt].to_s.empty?
       end
-      results = []
+      results = MoxiResponseArray.new()
       json = { 'page_number'=> 1, 'total_pages'=> 0, 'agents'=>[]}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
         puts response if MoxiworksPlatform::Config.debug
+        results.headers = response.headers
         self.check_for_error_in_response(response)
         json = JSON.parse(response)
         json['agents'].each do |r|

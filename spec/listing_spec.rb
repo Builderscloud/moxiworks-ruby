@@ -11,7 +11,8 @@ describe MoxiworksPlatform::Listing do
       :listing_images, :address, :address2, :city, :county_or_parish, :latitude, :longitude, :state_or_province,
       :postal_code, :lot_size_square_feet, :internet_entire_listing_display_yn, :middle_or_junior_school,
       :list_office_aor, :pool_yn, :property_type, :tax_annual_amount, :tax_year, :single_story,
-      :living_area, :view_yn, :year_built, :on_market, :moxi_works_listing_id
+      :living_area, :view_yn, :year_built, :on_market, :moxi_works_listing_id, :list_agent_uuid, :listing_url,
+      :status, :company_listing_attributes, :list_agent_moxi_works_office_id
   ]
 
 
@@ -77,7 +78,7 @@ describe MoxiworksPlatform::Listing do
         end
 
         context :full_response do
-          full_response = MoxiworksPlatform::Listing.underscore_attribute_names(JSON.parse('{"LotSizeAcres":0.0,"BathroomsFull":3,"BathroomsHalf":0,"BathroomsOneQuarter":null,"BathroomsPartial":null,"BathroomsThreeQuarter":null,"BathroomsTotalInteger":3,"BathroomsTotal":3.0,"BedroomsTotal":8,"PublicRemarks":"Publicalistically Remarkabalistically! REMARKABLE!!","ModificationTimestamp":"11/01/2016","InternetAddressDisplayYN":true,"DaysOnMarket":0,"ListingContractDate":"07/27/2016","CreatedDate":"11/01/2016","ElementarySchool":null,"GarageSpaces":4,"WaterfrontYN":false,"HighSchool":null,"AssociationFee":null,"ListOfficeName":"Keller Williams Realty Hudson Valley United M","ListPrice":599000,"ListingID":"44616","ListAgentFullName":null,"ListingImages":[{"FullURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","GalleryURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","RawURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","SmallURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","ThumbURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png"}],"Address":"97 Hilltop Road","Address2":null,"City":"Monticello","CountyOrParish":null,"Latitude":"47.723251","Longitude":"-122.171745","StateOrProvince":"NY","PostalCode":"12701","LotSizeSquareFeet":null,"InternetEntireListingDisplayYN":true,"MiddleOrJuniorSchool":null,"ListOfficeAOR":"WHATEVERS MLS","PoolYN":false,"PropertyType":"Residential","TaxAnnualAmount":13652,"TaxYear":2015,"SingleStory":false,"LivingArea":3640,"ViewYN":false,"YearBuilt":1989,"OnMarket":true,"MoxiWorksListingId":"5ce0e9a5-6015-fec5-aadf-a328af2c4cdc"}'))
+          full_response = MoxiworksPlatform::Listing.underscore_attribute_names(JSON.parse('{"LotSizeAcres":0.0,"BathroomsFull":3,"BathroomsHalf":0,"BathroomsOneQuarter":null,"BathroomsPartial":null,"BathroomsThreeQuarter":null,"BathroomsTotalInteger":3,"BathroomsTotal":3.0,"BedroomsTotal":8,"PublicRemarks":"Publicalistically Remarkabalistically! REMARKABLE!!","ModificationTimestamp":"11/01/2016","InternetAddressDisplayYN":true,"DaysOnMarket":0,"ListingContractDate":"07/27/2016","CreatedDate":"11/01/2016","ElementarySchool":null,"GarageSpaces":4,"WaterfrontYN":false,"HighSchool":null,"AssociationFee":null,"ListOfficeName":"Keller Williams Realty Hudson Valley United M","ListPrice":599000,"ListingID":"44616","ListingURL":"http://google.com","ListAgentFullName":null,"ListAgentUUID": "a1648f92-6767-4b08-9608-de1cd062e084","ListingImages":[{"FullURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","GalleryURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","RawURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","SmallURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png","ThumbURL":"http://images-static-qa.moxiworks.com/static/images/br/windermere/default_property_image_wre-326x250.png"}],"Address":"97 Hilltop Road","Address2":null,"City":"Monticello","CountyOrParish":null,"Latitude":"47.723251","Longitude":"-122.171745","StateOrProvince":"NY","PostalCode":"12701","LotSizeSquareFeet":null,"InternetEntireListingDisplayYN":true,"MiddleOrJuniorSchool":null,"ListOfficeAOR":"WHATEVERS MLS","PoolYN":false,"PropertyType":"Residential","TaxAnnualAmount":13652,"TaxYear":2015,"SingleStory":false,"LivingArea":3640,"ViewYN":false,"YearBuilt":1989,"OnMarket":true,"MoxiWorksListingId":"5ce0e9a5-6015-fec5-aadf-a328af2c4cdc","Status":"active","CompanyListingAttributes":[],"ListAgentMoxiWorksOfficeID":"5ce0e9a5-6015-fec5-aadf-a328aeb329bc"}'))
           it 'should return a MoxiworksPlatform::Listing Object when find is called' do
             VCR.use_cassette('listing/find/success', record: :none) do
               search_attrs = {'moxi_works_listing_id': 'abc123', 'moxi_works_company_id': moxi_works_company_id}
@@ -131,7 +132,7 @@ describe MoxiworksPlatform::Listing do
                   moxi_works_company_id: moxi_works_company_id,
                   updated_since: updated_since)
               expect(results.class).to eq(Hash)
-              expect(results['listings'].class).to eq(Array)
+              expect(results['listings'].class).to eq(MoxiResponseArray)
               expect(results['listings'].first.class).to eq(MoxiworksPlatform::Listing)
             end
           end
