@@ -148,7 +148,7 @@ module MoxiworksPlatform
             opts[opt].nil? or opts[opt].to_s.empty?
       end
       results = MoxiResponseArray.new()
-      json = { 'page_number': 1, 'total_pages': 0, 'offices':[]}
+      json = { 'page_number'=> 1, 'total_pages'=> 0, 'offices'=>[]}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
