@@ -137,7 +137,7 @@ module MoxiworksPlatform
 
 
       results = MoxiResponseArray.new()
-      json = { 'presentations':[]}
+      json = { 'presentations'=>[]}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
