@@ -85,7 +85,7 @@ module MoxiworksPlatform
       url = "#{MoxiworksPlatform::Config.url}/api/galleries/#{agent_identifier}"
 
       results = MoxiResponseArray.new()
-      json = {'galleries': []}
+      json = {'galleries'=> []}
       RestClient::Request.execute(method: :get,
                                   url: url,
                                   payload: opts, headers: self.headers) do |response|
